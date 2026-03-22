@@ -2,7 +2,7 @@ import React, { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { Box, ButtonBase, Divider, Paper, Typography, useTheme } from '@mui/material'
 
 import { MenuItemIcon } from './menuItemIcons'
-import type { ActionButtonMenuItemId, ActionButtonProps } from './types'
+import type { ActionButtonMenuItemId, ActionButtonMessage, ActionButtonProps } from './types'
 
 /** Top → bottom: پیام ها، اطلاعات بازی، نقش شما … */
 const MENU_ITEMS: ActionButtonMenuItemId[] = ['messages', 'gameInfo', 'yourRole']
@@ -33,11 +33,15 @@ export function ActionButton(props: ActionButtonProps) {
     menuItemHeight = 44,
     menuGap = 10,
     gameInfoPanelMaxHeight = 340,
+    messages: messagesProp,
+    messagePreviewDurationMs = 10_000,
     accentGradient = DEFAULT_ACCENT_GRADIENT,
     menuSurfaceBackground = DEFAULT_MENU_SURFACE_BACKGROUND,
     className,
     style
   } = props
+
+  const messages = messagesProp ?? []
 
   const iconGradientId = useId().replace(/:/g, '')
   const rootRef = useRef<HTMLDivElement | null>(null)
@@ -68,6 +72,11 @@ export function ActionButton(props: ActionButtonProps) {
 
   const [open, setOpen] = useState(false)
   const [gameInfoPanelOpen, setGameInfoPanelOpen] = useState(false)
+  const [messagesPanelOpen, setMessagesPanelOpen] = useState(false)
+  const [lastReadCount, setLastReadCount] = useState(0)
+  const [previewMessage, setPreviewMessage] = useState<ActionButtonMessage | null>(null)
+  const messagesLenRef = useRef(0)
+  const previewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [pos, setPos] = useState(() => {
     if (initialPosition) return { x: initialPosition.x, y: initialPosition.y }
     if (homePositionProp) return { x: homePositionProp.x, y: homePositionProp.y }
@@ -99,8 +108,52 @@ export function ActionButton(props: ActionButtonProps) {
     [gameInfoSectionLabels]
   )
 
-  /** action = bolt; close = menu open; back = game-info panel (returns to menu). */
-  const fabIconMode = gameInfoPanelOpen ? 'back' : open ? 'close' : 'action'
+  const unreadCount = Math.max(0, messages.length - lastReadCount)
+
+  useEffect(() => {
+    if (messages.length === 0) {
+      messagesLenRef.current = 0
+      setLastReadCount(0)
+      return
+    }
+    setLastReadCount((c) => Math.min(c, messages.length))
+  }, [messages.length])
+
+  useEffect(() => {
+    if (messages.length === 0) {
+      messagesLenRef.current = 0
+      return
+    }
+    if (messages.length > messagesLenRef.current) {
+      const latest = messages[messages.length - 1]
+      setPreviewMessage(latest)
+      if (previewTimerRef.current != null) {
+        clearTimeout(previewTimerRef.current)
+        previewTimerRef.current = null
+      }
+      previewTimerRef.current = setTimeout(() => {
+        setPreviewMessage(null)
+        previewTimerRef.current = null
+      }, messagePreviewDurationMs)
+    }
+    messagesLenRef.current = messages.length
+    return () => {
+      if (previewTimerRef.current != null) {
+        clearTimeout(previewTimerRef.current)
+        previewTimerRef.current = null
+      }
+    }
+  }, [messages, messagePreviewDurationMs])
+
+  useEffect(() => {
+    if (messagesPanelOpen) {
+      setLastReadCount(messages.length)
+    }
+  }, [messages, messagesPanelOpen])
+
+  /** action = bolt; close = menu open; back = game-info or messages panel (returns to menu). */
+  const fabIconMode =
+    gameInfoPanelOpen || messagesPanelOpen ? 'back' : open ? 'close' : 'action'
 
   const theme = useTheme()
   const rtlBackArrow =
@@ -136,8 +189,9 @@ export function ActionButton(props: ActionButtonProps) {
       menuSide === 'right' ? pos.x + circleSize / 2 + gap : pos.x - circleSize / 2 - gap - menuWidth
 
     const menuStackHeight = menuItemHeight * MENU_ITEMS.length + menuGap * (MENU_ITEMS.length - 1)
-    // Same anchor as the menu: use taller vertical extent when the game-info panel is open.
-    const stackHeight = gameInfoPanelOpen ? resolvedGamePanelHeight : menuStackHeight
+    // Same anchor as the menu: use taller vertical extent when a side panel is open.
+    const stackHeight =
+      gameInfoPanelOpen || messagesPanelOpen ? resolvedGamePanelHeight : menuStackHeight
     const yTop = Math.min(
       Math.max(yTopRaw, dragBoundsPadding),
       viewportHeight - dragBoundsPadding - stackHeight
@@ -153,11 +207,11 @@ export function ActionButton(props: ActionButtonProps) {
   useEffect(() => {
     recomputeMenuCoords()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pos.x, pos.y, menuSide, gameInfoPanelOpen, viewportHeight, resolvedGamePanelHeight])
+  }, [pos.x, pos.y, menuSide, gameInfoPanelOpen, messagesPanelOpen, viewportHeight, resolvedGamePanelHeight])
 
-  // Close menu / game-info panel when clicking outside the root.
+  // Close menu / side panels when clicking outside the root.
   useEffect(() => {
-    if (!open && !gameInfoPanelOpen) return
+    if (!open && !gameInfoPanelOpen && !messagesPanelOpen) return
 
     const onDown = (e: MouseEvent | TouchEvent) => {
       const el = rootRef.current
@@ -166,6 +220,7 @@ export function ActionButton(props: ActionButtonProps) {
       if (target && el.contains(target)) return
       setOpen(false)
       setGameInfoPanelOpen(false)
+      setMessagesPanelOpen(false)
     }
 
     window.addEventListener('mousedown', onDown)
@@ -174,7 +229,7 @@ export function ActionButton(props: ActionButtonProps) {
       window.removeEventListener('mousedown', onDown)
       window.removeEventListener('touchstart', onDown)
     }
-  }, [open, gameInfoPanelOpen])
+  }, [open, gameInfoPanelOpen, messagesPanelOpen])
 
   useEffect(() => {
     return () => {
@@ -222,6 +277,7 @@ export function ActionButton(props: ActionButtonProps) {
       longPressFiredRef.current = true
       setOpen(false)
       setGameInfoPanelOpen(false)
+      setMessagesPanelOpen(false)
       setPos(dragClamp({ x: resolvedHomePosition.x, y: resolvedHomePosition.y }))
     }, LONG_PRESS_MS)
 
@@ -274,6 +330,9 @@ export function ActionButton(props: ActionButtonProps) {
       if (gameInfoPanelOpen) {
         setGameInfoPanelOpen(false)
         setOpen(true)
+      } else if (messagesPanelOpen) {
+        setMessagesPanelOpen(false)
+        setOpen(true)
       } else {
         setOpen((v) => !v)
       }
@@ -302,8 +361,22 @@ export function ActionButton(props: ActionButtonProps) {
   const onItem = (id: ActionButtonMenuItemId) => {
     if (id === 'gameInfo') {
       onItemClick?.(id)
+      setMessagesPanelOpen(false)
       setGameInfoPanelOpen(true)
       setOpen(false)
+      return
+    }
+    if (id === 'messages') {
+      onItemClick?.(id)
+      setGameInfoPanelOpen(false)
+      setMessagesPanelOpen(true)
+      setOpen(false)
+      setLastReadCount(messages.length)
+      setPreviewMessage(null)
+      if (previewTimerRef.current != null) {
+        clearTimeout(previewTimerRef.current)
+        previewTimerRef.current = null
+      }
       return
     }
     onItemClick?.(id)
@@ -316,6 +389,19 @@ export function ActionButton(props: ActionButtonProps) {
     [accentGradient]
   )
   const circleBorder = '1px solid rgba(255,255,255,0.28)'
+
+  const previewBubbleLayout = useMemo(() => {
+    if (!previewMessage || typeof window === 'undefined') return null
+    const w = Math.min(menuWidth + 24, 280)
+    const left = Math.min(
+      Math.max(dragBoundsPadding, pos.x - w / 2),
+      window.innerWidth - dragBoundsPadding - w
+    )
+    const bubbleBlock = 118
+    const gap = 12
+    const top = Math.max(dragBoundsPadding, pos.y - circleSize / 2 - gap - bubbleBlock)
+    return { left, top, width: w }
+  }, [previewMessage, pos.x, pos.y, circleSize, menuWidth, dragBoundsPadding])
 
   return (
     <div
@@ -392,6 +478,30 @@ export function ActionButton(props: ActionButtonProps) {
                   >
                     {label}
                   </Typography>
+                  {id === 'messages' && unreadCount > 0 ? (
+                    <Box
+                      component="span"
+                      aria-label={String(unreadCount)}
+                      sx={{
+                        minWidth: 22,
+                        height: 22,
+                        px: 0.5,
+                        borderRadius: '11px',
+                        bgcolor: '#f43f5e',
+                        color: '#fff',
+                        fontSize: '0.72rem',
+                        fontWeight: 800,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                        lineHeight: 1,
+                        border: '2px solid rgba(255,255,255,0.2)'
+                      }}
+                    >
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </Box>
+                  ) : null}
                   <MenuItemIcon id={id} />
                 </Box>
               </ButtonBase>
@@ -469,6 +579,140 @@ export function ActionButton(props: ActionButtonProps) {
           </Paper>
       ) : null}
 
+      {messagesPanelOpen ? (
+        <Paper
+          dir="rtl"
+          elevation={0}
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
+          sx={{
+            position: 'fixed',
+            zIndex: 1321,
+            top: menuCoords.y,
+            left: menuCoords.x,
+            width: `${menuWidth}px`,
+            height: `${resolvedGamePanelHeight}px`,
+            maxHeight: `${resolvedGamePanelHeight}px`,
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            borderRadius: '22px',
+            padding: '14px 14px 16px',
+            backdropFilter: 'blur(12px)',
+            background: menuSurfaceBackground,
+            border: '1px solid rgba(255,255,255,0.22)',
+            boxShadow: '0 12px 36px rgba(0,0,0,0.35)',
+            transformOrigin: menuSide === 'right' ? 'left top' : 'right top'
+          }}
+        >
+          <Typography
+            sx={{
+              fontSize: '1.02rem',
+              fontWeight: 800,
+              letterSpacing: '-0.02em',
+              marginBottom: '12px',
+              flexShrink: 0
+            }}
+          >
+            {menuLabels.messages}
+          </Typography>
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 0,
+              minHeight: 0,
+              flex: 1,
+              overflow: 'auto',
+              pr: '2px'
+            }}
+          >
+            {messages.length === 0 ? (
+              <Typography sx={{ fontSize: '0.9rem', opacity: 0.75, py: 2, textAlign: 'center' }}>
+                پیامی نیست
+              </Typography>
+            ) : (
+              [...messages].reverse().map((m) => (
+                <Box
+                  key={m.id}
+                  sx={{
+                    py: 1.25,
+                    borderBottom: '1px solid rgba(255,255,255,0.1)',
+                    '&:last-of-type': { borderBottom: 'none' }
+                  }}
+                >
+                  {m.at != null ? (
+                    <Typography
+                      component="div"
+                      sx={{ fontSize: '0.7rem', fontWeight: 600, opacity: 0.65, marginBottom: '4px' }}
+                    >
+                      {new Date(m.at).toLocaleString()}
+                    </Typography>
+                  ) : null}
+                  <Typography sx={{ fontSize: '0.93rem', fontWeight: 600, lineHeight: 1.45, wordBreak: 'break-word' }}>
+                    {m.body}
+                  </Typography>
+                </Box>
+              ))
+            )}
+          </Box>
+        </Paper>
+      ) : null}
+
+      {previewMessage && !messagesPanelOpen && previewBubbleLayout ? (
+        <Box
+          dir="rtl"
+          sx={{
+            position: 'fixed',
+            zIndex: 1328,
+            left: previewBubbleLayout.left,
+            top: previewBubbleLayout.top,
+            width: previewBubbleLayout.width,
+            pointerEvents: 'none'
+          }}
+        >
+          <Paper
+            elevation={0}
+            sx={{
+              p: '12px 14px',
+              borderRadius: '16px',
+              backdropFilter: 'blur(12px)',
+              background: menuSurfaceBackground,
+              border: '1px solid rgba(255,255,255,0.28)',
+              boxShadow: '0 14px 40px rgba(0,0,0,0.4)',
+              position: 'relative'
+            }}
+          >
+            <Typography
+              sx={{
+                fontSize: '0.88rem',
+                fontWeight: 650,
+                lineHeight: 1.45,
+                display: '-webkit-box',
+                WebkitLineClamp: 4,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+                wordBreak: 'break-word'
+              }}
+            >
+              {previewMessage.body}
+            </Typography>
+          </Paper>
+          <Box
+            sx={{
+              width: 0,
+              height: 0,
+              mx: 'auto',
+              borderLeft: '10px solid transparent',
+              borderRight: '10px solid transparent',
+              borderTop: '11px solid rgba(255,255,255,0.12)',
+              filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.25))',
+              mt: '-1px'
+            }}
+          />
+        </Box>
+      ) : null}
+
       {/* Draggable Circle */}
       <Box
         role="button"
@@ -498,6 +742,35 @@ export function ActionButton(props: ActionButtonProps) {
           boxShadow: '0 18px 60px rgba(0,0,0,0.45)'
         }}
       >
+        {unreadCount > 0 ? (
+          <Box
+            component="span"
+            aria-label={String(unreadCount)}
+            sx={{
+              position: 'absolute',
+              top: -2,
+              right: -2,
+              minWidth: 22,
+              height: 22,
+              px: 0.5,
+              borderRadius: '11px',
+              bgcolor: '#f43f5e',
+              color: '#fff',
+              fontSize: '0.72rem',
+              fontWeight: 800,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              lineHeight: 1,
+              border: '2px solid rgba(255,255,255,0.35)',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.35)',
+              zIndex: 2,
+              pointerEvents: 'none'
+            }}
+          >
+            {unreadCount > 99 ? '99+' : unreadCount}
+          </Box>
+        ) : null}
         {fabIconMode === 'back' ? (
           <Box
             aria-hidden

@@ -7,6 +7,14 @@ export type ActionButtonMenuItem = {
   label: string
 }
 
+/** In-app message piped into the action button (list + preview bubble). */
+export type ActionButtonMessage = {
+  id: string
+  body: string
+  /** Optional ms timestamp for display in the messages panel. */
+  at?: number
+}
+
 export type ActionButtonProps = {
   /**
    * Role name shown in the bottom item: `نقش شما {yourRoleName}`.
@@ -81,6 +89,16 @@ export type ActionButtonProps = {
    * Max height of the «اطلاعات بازی» panel (same width as the menu). Taller than the button stack; content scrolls inside.
    */
   gameInfoPanelMaxHeight?: number
+
+  /**
+   * Incoming messages (newest appended). Drives unread badge, preview bubble, and the «پیام ها» panel.
+   */
+  messages?: ActionButtonMessage[]
+
+  /**
+   * How long the chat preview bubble stays visible after a new message (ms). Default 10000.
+   */
+  messagePreviewDurationMs?: number
 
   /**
    * Background for the draggable circle (CSS `background`, e.g. a `linear-gradient`).
