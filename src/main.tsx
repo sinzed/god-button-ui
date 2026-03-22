@@ -29,6 +29,9 @@ function Playground() {
         }}
       >
         <ActionButton
+          yourRoleName="پزشک"
+          playerNamesContent="علی، مریم، رضا"
+          gameRoleNamesContent="پزشک، کارآگاه، پیش‌بین"
           onItemClick={(id) => {
             // eslint-disable-next-line no-console
             console.log('Menu item:', id)

@@ -1,6 +1,6 @@
 import type React from 'react'
 
-export type ActionButtonMenuItemId = 'gameInfo' | 'messages' | 'abilities'
+export type ActionButtonMenuItemId = 'messages' | 'gameInfo' | 'yourRole'
 
 export type ActionButtonMenuItem = {
   id: ActionButtonMenuItemId
@@ -9,12 +9,35 @@ export type ActionButtonMenuItem = {
 
 export type ActionButtonProps = {
   /**
+   * Role name shown in the bottom item: `نقش شما {yourRoleName}`.
+   */
+  yourRoleName?: string
+
+  /**
+   * Section headings inside the «اطلاعات بازی» panel (defaults: نام بازیکنان، نام نقش های بازی).
+   */
+  gameInfoSectionLabels?: {
+    playerNames?: string
+    roleNames?: string
+  }
+
+  /**
+   * Body under «نام بازیکنان» in the game-info panel.
+   */
+  playerNamesContent?: React.ReactNode
+
+  /**
+   * Body under «نام نقش های بازی» in the game-info panel.
+   */
+  gameRoleNamesContent?: React.ReactNode
+
+  /**
    * Called when a user taps a menu button.
    */
   onItemClick?: (id: ActionButtonMenuItemId) => void
 
   /**
-   * Override default Persian labels (اطلاعات بازی، پیام ها، توانایی ها).
+   * Override default Persian labels.
    */
   labels?: Partial<Record<ActionButtonMenuItemId, string>>
 
@@ -53,6 +76,11 @@ export type ActionButtonProps = {
    * Vertical gap between menu buttons in px.
    */
   menuGap?: number
+
+  /**
+   * Max height of the «اطلاعات بازی» panel (same width as the menu). Taller than the button stack; content scrolls inside.
+   */
+  gameInfoPanelMaxHeight?: number
 
   /**
    * Optional CSS class applied to the root wrapper.

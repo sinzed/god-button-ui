@@ -1,12 +1,20 @@
 import React, { useEffect, useId, useMemo, useRef, useState } from 'react'
-import { Box, ButtonBase, Typography } from '@mui/material'
+import { Box, ButtonBase, Divider, Paper, Typography, useTheme } from '@mui/material'
 
+import { MenuItemIcon } from './menuItemIcons'
 import type { ActionButtonMenuItemId, ActionButtonProps } from './types'
 
-const MENU_ITEMS: ActionButtonMenuItemId[] = ['gameInfo', 'messages', 'abilities']
+/** Top → bottom: پیام ها، اطلاعات بازی، نقش شما … */
+const MENU_ITEMS: ActionButtonMenuItemId[] = ['messages', 'gameInfo', 'yourRole']
+
+const DEFAULT_YOUR_ROLE = 'پزشک'
 
 export function ActionButton(props: ActionButtonProps) {
   const {
+    yourRoleName = DEFAULT_YOUR_ROLE,
+    gameInfoSectionLabels,
+    playerNamesContent,
+    gameRoleNamesContent,
     onItemClick,
     labels,
     initialPosition,
@@ -16,6 +24,7 @@ export function ActionButton(props: ActionButtonProps) {
     menuWidth = 230,
     menuItemHeight = 44,
     menuGap = 10,
+    gameInfoPanelMaxHeight = 340,
     className,
     style
   } = props
@@ -48,6 +57,7 @@ export function ActionButton(props: ActionButtonProps) {
   }, [homePositionProp, initialPosition, dragBoundsPadding, circleSize])
 
   const [open, setOpen] = useState(false)
+  const [gameInfoPanelOpen, setGameInfoPanelOpen] = useState(false)
   const [pos, setPos] = useState(() => {
     if (initialPosition) return { x: initialPosition.x, y: initialPosition.y }
     if (homePositionProp) return { x: homePositionProp.x, y: homePositionProp.y }
@@ -62,14 +72,45 @@ export function ActionButton(props: ActionButtonProps) {
 
   const menuLabels = useMemo(() => {
     const base: Record<ActionButtonMenuItemId, string> = {
-      gameInfo: 'اطلاعات بازی',
       messages: 'پیام ها',
-      abilities: 'توانایی ها'
+      gameInfo: 'اطلاعات بازی',
+      yourRole: `نقش شما ${yourRoleName}`
     }
 
     if (!labels) return base
     return { ...base, ...labels }
-  }, [labels])
+  }, [labels, yourRoleName])
+
+  const gameInfoSections = useMemo(
+    () => ({
+      playerNames: gameInfoSectionLabels?.playerNames ?? 'نام بازیکنان',
+      roleNames: gameInfoSectionLabels?.roleNames ?? 'نام نقش های بازی'
+    }),
+    [gameInfoSectionLabels]
+  )
+
+  /** action = bolt; close = menu open; back = game-info panel (returns to menu). */
+  const fabIconMode = gameInfoPanelOpen ? 'back' : open ? 'close' : 'action'
+
+  const theme = useTheme()
+  const rtlBackArrow =
+    theme.direction === 'rtl' ||
+    (typeof document !== 'undefined' && document.documentElement.getAttribute('dir') === 'rtl')
+
+  const [viewportHeight, setViewportHeight] = useState(() =>
+    typeof window !== 'undefined' ? window.innerHeight : 800
+  )
+
+  useEffect(() => {
+    const onResize = () => setViewportHeight(window.innerHeight)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+
+  const resolvedGamePanelHeight = useMemo(
+    () => Math.min(gameInfoPanelMaxHeight, Math.max(120, viewportHeight - dragBoundsPadding * 2)),
+    [gameInfoPanelMaxHeight, viewportHeight, dragBoundsPadding]
+  )
 
   const [menuCoords, setMenuCoords] = useState(() => {
     const gap = 10
@@ -84,9 +125,13 @@ export function ActionButton(props: ActionButtonProps) {
     const xLeftRaw =
       menuSide === 'right' ? pos.x + circleSize / 2 + gap : pos.x - circleSize / 2 - gap - menuWidth
 
-    // Keep menu stack inside the viewport (three buttons + gaps, no outer panel).
-    const panelHeight = menuItemHeight * MENU_ITEMS.length + menuGap * (MENU_ITEMS.length - 1)
-    const yTop = Math.min(Math.max(yTopRaw, dragBoundsPadding), window.innerHeight - dragBoundsPadding - panelHeight)
+    const menuStackHeight = menuItemHeight * MENU_ITEMS.length + menuGap * (MENU_ITEMS.length - 1)
+    // Same anchor as the menu: use taller vertical extent when the game-info panel is open.
+    const stackHeight = gameInfoPanelOpen ? resolvedGamePanelHeight : menuStackHeight
+    const yTop = Math.min(
+      Math.max(yTopRaw, dragBoundsPadding),
+      viewportHeight - dragBoundsPadding - stackHeight
+    )
     const xLeft =
       menuSide === 'right'
         ? Math.min(Math.max(xLeftRaw, dragBoundsPadding), window.innerWidth - dragBoundsPadding - menuWidth)
@@ -98,11 +143,11 @@ export function ActionButton(props: ActionButtonProps) {
   useEffect(() => {
     recomputeMenuCoords()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pos.x, pos.y, menuSide])
+  }, [pos.x, pos.y, menuSide, gameInfoPanelOpen, viewportHeight, resolvedGamePanelHeight])
 
-  // Close when clicking outside.
+  // Close menu / game-info panel when clicking outside the root.
   useEffect(() => {
-    if (!open) return
+    if (!open && !gameInfoPanelOpen) return
 
     const onDown = (e: MouseEvent | TouchEvent) => {
       const el = rootRef.current
@@ -110,6 +155,7 @@ export function ActionButton(props: ActionButtonProps) {
       const target = e.target as Node | null
       if (target && el.contains(target)) return
       setOpen(false)
+      setGameInfoPanelOpen(false)
     }
 
     window.addEventListener('mousedown', onDown)
@@ -118,7 +164,7 @@ export function ActionButton(props: ActionButtonProps) {
       window.removeEventListener('mousedown', onDown)
       window.removeEventListener('touchstart', onDown)
     }
-  }, [open])
+  }, [open, gameInfoPanelOpen])
 
   useEffect(() => {
     return () => {
@@ -165,6 +211,7 @@ export function ActionButton(props: ActionButtonProps) {
       if (draggingRef.current) return
       longPressFiredRef.current = true
       setOpen(false)
+      setGameInfoPanelOpen(false)
       setPos(dragClamp({ x: resolvedHomePosition.x, y: resolvedHomePosition.y }))
     }, LONG_PRESS_MS)
 
@@ -214,7 +261,12 @@ export function ActionButton(props: ActionButtonProps) {
 
     // Toggle only if it was effectively a click (not a drag).
     if (dist < 6 && dt < 400 && !wasDragging) {
-      setOpen((v) => !v)
+      if (gameInfoPanelOpen) {
+        setGameInfoPanelOpen(false)
+        setOpen(true)
+      } else {
+        setOpen((v) => !v)
+      }
     }
 
     try {
@@ -238,6 +290,12 @@ export function ActionButton(props: ActionButtonProps) {
   }
 
   const onItem = (id: ActionButtonMenuItemId) => {
+    if (id === 'gameInfo') {
+      onItemClick?.(id)
+      setGameInfoPanelOpen(true)
+      setOpen(false)
+      return
+    }
     onItemClick?.(id)
     setOpen(false)
   }
@@ -268,6 +326,7 @@ export function ActionButton(props: ActionButtonProps) {
           }}
           sx={{
             position: 'fixed',
+            zIndex: 1310,
             top: menuCoords.y,
             left: menuCoords.x,
             width: `${menuWidth}px`,
@@ -286,7 +345,7 @@ export function ActionButton(props: ActionButtonProps) {
                 sx={{
                   height: `${menuItemHeight}px`,
                   borderRadius: '18px',
-                  paddingX: '14px',
+                  paddingX: '12px',
                   justifyContent: 'flex-start',
                   backdropFilter: 'blur(12px)',
                   background: 'rgba(255,255,255,0.10)',
@@ -297,25 +356,124 @@ export function ActionButton(props: ActionButtonProps) {
                   }
                 }}
               >
-                <Typography
+                <Box
                   sx={{
-                    fontSize: '0.95rem',
-                    fontWeight: 700,
-                    letterSpacing: '-0.01em',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'flex-start',
+                    gap: '10px',
                     width: '100%',
-                    textAlign: 'start'
+                    flexDirection: 'row'
                   }}
                 >
-                  {label}
-                </Typography>
+                  <Typography
+                    sx={{
+                      fontSize: '0.95rem',
+                      fontWeight: 700,
+                      letterSpacing: '-0.01em',
+                      flex: 1,
+                      minWidth: 0,
+                      textAlign: 'start'
+                    }}
+                  >
+                    {label}
+                  </Typography>
+                  <MenuItemIcon id={id} />
+                </Box>
               </ButtonBase>
             )
           })}
         </Box>
       ) : null}
 
+      {gameInfoPanelOpen ? (
+        <>
+          <Box
+            aria-hidden
+            onClick={() => setGameInfoPanelOpen(false)}
+            sx={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 1320,
+              background: 'rgba(0,0,0,0.52)',
+              backdropFilter: 'blur(4px)'
+            }}
+          />
+          <Paper
+            dir="rtl"
+            elevation={0}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+            sx={{
+              position: 'fixed',
+              zIndex: 1321,
+              top: menuCoords.y,
+              left: menuCoords.x,
+              width: `${menuWidth}px`,
+              height: `${resolvedGamePanelHeight}px`,
+              maxHeight: `${resolvedGamePanelHeight}px`,
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+              borderRadius: '22px',
+              padding: '14px 14px 16px',
+              backdropFilter: 'blur(12px)',
+              background: 'rgba(255,255,255,0.10)',
+              border: '1px solid rgba(255,255,255,0.22)',
+              boxShadow: '0 12px 36px rgba(0,0,0,0.35)',
+              transformOrigin: menuSide === 'right' ? 'left top' : 'right top'
+            }}
+          >
+            <Typography
+              sx={{
+                fontSize: '1.02rem',
+                fontWeight: 800,
+                letterSpacing: '-0.02em',
+                marginBottom: '12px',
+                flexShrink: 0
+              }}
+            >
+              {menuLabels.gameInfo}
+            </Typography>
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 2,
+                minHeight: 0,
+                flex: 1,
+                overflow: 'auto',
+                pr: '2px'
+              }}
+            >
+              <Box>
+                <Typography sx={{ fontSize: '0.82rem', fontWeight: 700, opacity: 0.72, marginBottom: '6px' }}>
+                  {gameInfoSections.playerNames}
+                </Typography>
+                <Typography sx={{ fontSize: '0.95rem', fontWeight: 600, lineHeight: 1.45 }}>
+                  {playerNamesContent ?? '—'}
+                </Typography>
+              </Box>
+              <Divider sx={{ borderColor: 'rgba(255,255,255,0.12)' }} />
+              <Box>
+                <Typography sx={{ fontSize: '0.82rem', fontWeight: 700, opacity: 0.72, marginBottom: '6px' }}>
+                  {gameInfoSections.roleNames}
+                </Typography>
+                <Typography sx={{ fontSize: '0.95rem', fontWeight: 600, lineHeight: 1.45 }}>
+                  {gameRoleNamesContent ?? '—'}
+                </Typography>
+              </Box>
+            </Box>
+          </Paper>
+        </>
+      ) : null}
+
       {/* Draggable Circle */}
       <Box
+        role="button"
+        aria-label={
+          fabIconMode === 'back' ? 'بازگشت به منو' : fabIconMode === 'close' ? 'بستن منو' : 'باز کردن منو'
+        }
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
@@ -327,7 +485,7 @@ export function ActionButton(props: ActionButtonProps) {
           borderRadius: '50%',
           top: pos.y - circleSize / 2,
           left: pos.x - circleSize / 2,
-          zIndex: 1301,
+          zIndex: 1330,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -339,33 +497,77 @@ export function ActionButton(props: ActionButtonProps) {
           boxShadow: '0 18px 60px rgba(0,0,0,0.45)'
         }}
       >
-        <Box
-          aria-hidden
-          component="svg"
-          viewBox="0 0 24 24"
-          sx={{
-            width: `${circleSize * 0.5}px`,
-            height: `${circleSize * 0.5}px`,
-            flexShrink: 0,
-            display: 'block',
-            color: '#fff',
-            opacity: 0.96,
-            filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.45))',
-            // Crisp edges on HiDPI
-            shapeRendering: 'geometricPrecision'
-          }}
-        >
-          <defs>
-            <linearGradient id={iconGradientId} x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#ffffff" stopOpacity="1" />
-              <stop offset="100%" stopColor="#e8eef8" stopOpacity="0.95" />
-            </linearGradient>
-          </defs>
-          <path
-            fill={`url(#${iconGradientId})`}
-            d="M11 21h-1l1-7H7.5c-.58 0-.57-.32-.38-.66.19-.34.05-.08.07-.12C8.48 10.94 10.42 7.54 13 3h1l-1 7h3.5c.49 0 .56.33.47.51l-.07.15C12.96 17.55 11 21 11 21z"
-          />
-        </Box>
+        {fabIconMode === 'back' ? (
+          <Box
+            aria-hidden
+            component="svg"
+            viewBox="0 0 24 24"
+            sx={{
+              width: `${circleSize * 0.48}px`,
+              height: `${circleSize * 0.48}px`,
+              flexShrink: 0,
+              display: 'block',
+              color: '#fff',
+              opacity: 0.98,
+              filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.45))',
+              shapeRendering: 'geometricPrecision',
+              transform: rtlBackArrow ? 'scaleX(-1)' : 'none'
+            }}
+          >
+            <path
+              fill="currentColor"
+              d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"
+            />
+          </Box>
+        ) : fabIconMode === 'close' ? (
+          <Box
+            aria-hidden
+            component="svg"
+            viewBox="0 0 24 24"
+            sx={{
+              width: `${circleSize * 0.46}px`,
+              height: `${circleSize * 0.46}px`,
+              flexShrink: 0,
+              display: 'block',
+              color: '#fff',
+              opacity: 0.98,
+              filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.45))',
+              shapeRendering: 'geometricPrecision'
+            }}
+          >
+            <path
+              fill="currentColor"
+              d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"
+            />
+          </Box>
+        ) : (
+          <Box
+            aria-hidden
+            component="svg"
+            viewBox="0 0 24 24"
+            sx={{
+              width: `${circleSize * 0.5}px`,
+              height: `${circleSize * 0.5}px`,
+              flexShrink: 0,
+              display: 'block',
+              color: '#fff',
+              opacity: 0.96,
+              filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.45))',
+              shapeRendering: 'geometricPrecision'
+            }}
+          >
+            <defs>
+              <linearGradient id={iconGradientId} x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#ffffff" stopOpacity="1" />
+                <stop offset="100%" stopColor="#e8eef8" stopOpacity="0.95" />
+              </linearGradient>
+            </defs>
+            <path
+              fill={`url(#${iconGradientId})`}
+              d="M11 21h-1l1-7H7.5c-.58 0-.57-.32-.38-.66.19-.34.05-.08.07-.12C8.48 10.94 10.42 7.54 13 3h1l-1 7h3.5c.49 0 .56.33.47.51l-.07.15C12.96 17.55 11 21 11 21z"
+            />
+          </Box>
+        )}
       </Box>
     </div>
   )
