@@ -397,10 +397,13 @@ export function ActionButton(props: ActionButtonProps) {
       Math.max(dragBoundsPadding, pos.x - w / 2),
       window.innerWidth - dragBoundsPadding - w
     )
-    const bubbleBlock = 118
-    const gap = 12
-    const top = Math.max(dragBoundsPadding, pos.y - circleSize / 2 - gap - bubbleBlock)
-    return { left, top, width: w }
+    /** Small gap between triangle tip and top edge of the FAB (px). */
+    const gapAboveFab = 5
+    const fabTop = pos.y - circleSize / 2
+    // Anchor bubble stack from below so the tail sits right above the circle (no fake “reserved height” gap).
+    const bottom = window.innerHeight - fabTop + gapAboveFab
+    const maxBubbleHeight = Math.max(96, fabTop - dragBoundsPadding - gapAboveFab)
+    return { left, width: w, bottom, maxBubbleHeight }
   }, [previewMessage, pos.x, pos.y, circleSize, menuWidth, dragBoundsPadding])
 
   return (
@@ -666,21 +669,27 @@ export function ActionButton(props: ActionButtonProps) {
             position: 'fixed',
             zIndex: 1328,
             left: previewBubbleLayout.left,
-            top: previewBubbleLayout.top,
+            bottom: previewBubbleLayout.bottom,
             width: previewBubbleLayout.width,
+            maxHeight: previewBubbleLayout.maxBubbleHeight,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'flex-end',
             pointerEvents: 'none'
           }}
         >
           <Paper
             elevation={0}
             sx={{
-              p: '12px 14px',
-              borderRadius: '16px',
+              p: '10px 12px',
+              borderRadius: '14px',
               backdropFilter: 'blur(12px)',
               background: menuSurfaceBackground,
               border: '1px solid rgba(255,255,255,0.28)',
               boxShadow: '0 14px 40px rgba(0,0,0,0.4)',
-              position: 'relative'
+              position: 'relative',
+              flexShrink: 1,
+              minHeight: 0
             }}
           >
             <Typography
@@ -703,10 +712,11 @@ export function ActionButton(props: ActionButtonProps) {
               width: 0,
               height: 0,
               mx: 'auto',
-              borderLeft: '10px solid transparent',
-              borderRight: '10px solid transparent',
-              borderTop: '11px solid rgba(255,255,255,0.12)',
-              filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.25))',
+              flexShrink: 0,
+              borderLeft: '9px solid transparent',
+              borderRight: '9px solid transparent',
+              borderTop: '9px solid rgba(255,255,255,0.14)',
+              filter: 'drop-shadow(0 3px 8px rgba(0,0,0,0.22))',
               mt: '-1px'
             }}
           />
