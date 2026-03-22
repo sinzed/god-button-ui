@@ -21,8 +21,11 @@ export default defineConfig({
     },
     rollupOptions: {
       // Keep React/MUI external so the component can be installed in other apps.
+      // Include JSX runtimes — if inlined, Rolldown embeds CJS that calls `require("react")` and breaks in browsers.
       external: [
         'react',
+        'react/jsx-runtime',
+        'react/jsx-dev-runtime',
         'react-dom',
         '@mui/material',
         '@emotion/react',
