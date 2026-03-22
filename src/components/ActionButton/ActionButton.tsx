@@ -9,6 +9,14 @@ const MENU_ITEMS: ActionButtonMenuItemId[] = ['messages', 'gameInfo', 'yourRole'
 
 const DEFAULT_YOUR_ROLE = 'پزشک'
 
+/** Default FAB: dark purple gradient */
+export const DEFAULT_ACCENT_GRADIENT =
+  'linear-gradient(155deg, #6d28d9 0%, #5b21b6 38%, #4c1d95 72%, #1e1b4b 100%)'
+
+/** Default menu / game-info glass surfaces (pairs with {@link DEFAULT_ACCENT_GRADIENT}) */
+export const DEFAULT_MENU_SURFACE_BACKGROUND =
+  'linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.06)), linear-gradient(140deg, rgba(91,33,182,0.48), rgba(30,27,75,0.58))'
+
 export function ActionButton(props: ActionButtonProps) {
   const {
     yourRoleName = DEFAULT_YOUR_ROLE,
@@ -25,6 +33,8 @@ export function ActionButton(props: ActionButtonProps) {
     menuItemHeight = 44,
     menuGap = 10,
     gameInfoPanelMaxHeight = 340,
+    accentGradient = DEFAULT_ACCENT_GRADIENT,
+    menuSurfaceBackground = DEFAULT_MENU_SURFACE_BACKGROUND,
     className,
     style
   } = props
@@ -300,8 +310,12 @@ export function ActionButton(props: ActionButtonProps) {
     setOpen(false)
   }
 
-  const circleBg = 'linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.06))'
-  const circleBorder = '1px solid rgba(255,255,255,0.25)'
+  const circleBg = useMemo(
+    () =>
+      `linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.05)), ${accentGradient}`,
+    [accentGradient]
+  )
+  const circleBorder = '1px solid rgba(255,255,255,0.28)'
 
   return (
     <div
@@ -348,11 +362,11 @@ export function ActionButton(props: ActionButtonProps) {
                   paddingX: '12px',
                   justifyContent: 'flex-start',
                   backdropFilter: 'blur(12px)',
-                  background: 'rgba(255,255,255,0.10)',
+                  background: menuSurfaceBackground,
                   border: '1px solid rgba(255,255,255,0.22)',
                   boxShadow: '0 12px 36px rgba(0,0,0,0.35)',
                   '&:hover': {
-                    background: 'rgba(255,255,255,0.14)'
+                    filter: 'brightness(1.08)'
                   }
                 }}
               >
@@ -418,7 +432,7 @@ export function ActionButton(props: ActionButtonProps) {
               borderRadius: '22px',
               padding: '14px 14px 16px',
               backdropFilter: 'blur(12px)',
-              background: 'rgba(255,255,255,0.10)',
+              background: menuSurfaceBackground,
               border: '1px solid rgba(255,255,255,0.22)',
               boxShadow: '0 12px 36px rgba(0,0,0,0.35)',
               transformOrigin: menuSide === 'right' ? 'left top' : 'right top'

@@ -83,6 +83,18 @@ export type ActionButtonProps = {
   gameInfoPanelMaxHeight?: number
 
   /**
+   * Background for the draggable circle (CSS `background`, e.g. a `linear-gradient`).
+   * Default: dark purple gradient.
+   */
+  accentGradient?: string
+
+  /**
+   * Background for menu rows and the game-info panel (glass stack).
+   * Default: frosted glass with a purple tint that matches `accentGradient`.
+   */
+  menuSurfaceBackground?: string
+
+  /**
    * Optional CSS class applied to the root wrapper.
    */
   className?: string
