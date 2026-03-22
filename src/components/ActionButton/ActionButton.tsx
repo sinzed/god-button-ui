@@ -401,18 +401,6 @@ export function ActionButton(props: ActionButtonProps) {
       ) : null}
 
       {gameInfoPanelOpen ? (
-        <>
-          <Box
-            aria-hidden
-            onClick={() => setGameInfoPanelOpen(false)}
-            sx={{
-              position: 'fixed',
-              inset: 0,
-              zIndex: 1320,
-              background: 'rgba(0,0,0,0.52)',
-              backdropFilter: 'blur(4px)'
-            }}
-          />
           <Paper
             dir="rtl"
             elevation={0}
@@ -479,7 +467,6 @@ export function ActionButton(props: ActionButtonProps) {
               </Box>
             </Box>
           </Paper>
-        </>
       ) : null}
 
       {/* Draggable Circle */}
