@@ -1,41 +1,57 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { Badge, Box, ButtonBase, Paper, Typography } from '@mui/material'
+import React, { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { Box, ButtonBase, Typography } from '@mui/material'
 
 import type { ActionButtonMenuItemId, ActionButtonProps } from './types'
 
-const DEFAULT_YOUR_ROLE = 'پزشک'
+const MENU_ITEMS: ActionButtonMenuItemId[] = ['gameInfo', 'messages', 'abilities']
 
 export function ActionButton(props: ActionButtonProps) {
   const {
-    unreadEventsCount = 0,
-    yourRoleName = DEFAULT_YOUR_ROLE,
     onItemClick,
     labels,
     initialPosition,
+    homePosition: homePositionProp,
     dragBoundsPadding = 12,
     circleSize = 64,
     menuWidth = 230,
     menuItemHeight = 44,
+    menuGap = 10,
     className,
     style
   } = props
 
+  const iconGradientId = useId().replace(/:/g, '')
   const rootRef = useRef<HTMLDivElement | null>(null)
   const draggingRef = useRef(false)
   const pointerIdRef = useRef<number | null>(null)
   const dragStartRef = useRef({ x: 0, y: 0 })
   const positionStartRef = useRef({ x: 0, y: 0 })
   const pointerDownAtRef = useRef({ x: 0, y: 0, t: 0 })
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const longPressFiredRef = useRef(false)
+
+  const defaultCenterPosition = () => {
+    if (typeof window === 'undefined') {
+      return { x: dragBoundsPadding + circleSize / 2, y: 0 }
+    }
+    // Default: left side, ~30% from top (center of the circle).
+    return { x: dragBoundsPadding + circleSize / 2, y: window.innerHeight * 0.3 }
+  }
+
+  const resolvedHomePosition = useMemo(() => {
+    if (homePositionProp) return { ...homePositionProp }
+    if (initialPosition) return { ...initialPosition }
+    if (typeof window === 'undefined') {
+      return { x: dragBoundsPadding + circleSize / 2, y: 0 }
+    }
+    return { x: dragBoundsPadding + circleSize / 2, y: window.innerHeight * 0.3 }
+  }, [homePositionProp, initialPosition, dragBoundsPadding, circleSize])
 
   const [open, setOpen] = useState(false)
   const [pos, setPos] = useState(() => {
     if (initialPosition) return { x: initialPosition.x, y: initialPosition.y }
-
-    // Default: left side, around middle of the screen.
-    if (typeof window === 'undefined') {
-      return { x: dragBoundsPadding + circleSize / 2, y: 0 }
-    }
-    return { x: dragBoundsPadding + circleSize / 2, y: window.innerHeight * 0.55 }
+    if (homePositionProp) return { x: homePositionProp.x, y: homePositionProp.y }
+    return defaultCenterPosition()
   })
 
   // Menu expands toward the opposite side of the circle.
@@ -46,16 +62,14 @@ export function ActionButton(props: ActionButtonProps) {
 
   const menuLabels = useMemo(() => {
     const base: Record<ActionButtonMenuItemId, string> = {
-      yourRole: `نقش شما: ${yourRoleName}`,
-      viewRoles: 'مشاهده ی نقش ها',
-      playerNames: 'نام بازیکنان',
-      queryResults: 'نتیجه ی استعلام ها',
-      events: 'رخداد ها'
+      gameInfo: 'اطلاعات بازی',
+      messages: 'پیام ها',
+      abilities: 'توانایی ها'
     }
 
     if (!labels) return base
     return { ...base, ...labels }
-  }, [labels, yourRoleName])
+  }, [labels])
 
   const [menuCoords, setMenuCoords] = useState(() => {
     const gap = 10
@@ -70,8 +84,8 @@ export function ActionButton(props: ActionButtonProps) {
     const xLeftRaw =
       menuSide === 'right' ? pos.x + circleSize / 2 + gap : pos.x - circleSize / 2 - gap - menuWidth
 
-    // Keep panel inside the viewport.
-    const panelHeight = 10 * 2 + 8 * 4 + menuItemHeight * 5
+    // Keep menu stack inside the viewport (three buttons + gaps, no outer panel).
+    const panelHeight = menuItemHeight * MENU_ITEMS.length + menuGap * (MENU_ITEMS.length - 1)
     const yTop = Math.min(Math.max(yTopRaw, dragBoundsPadding), window.innerHeight - dragBoundsPadding - panelHeight)
     const xLeft =
       menuSide === 'right'
@@ -106,6 +120,15 @@ export function ActionButton(props: ActionButtonProps) {
     }
   }, [open])
 
+  useEffect(() => {
+    return () => {
+      if (longPressTimerRef.current != null) {
+        clearTimeout(longPressTimerRef.current)
+        longPressTimerRef.current = null
+      }
+    }
+  }, [])
+
   const dragClamp = (next: { x: number; y: number }) => {
     const r = circleSize / 2
     const minX = dragBoundsPadding + r
@@ -118,14 +141,32 @@ export function ActionButton(props: ActionButtonProps) {
     }
   }
 
+  const clearLongPressTimer = () => {
+    if (longPressTimerRef.current != null) {
+      clearTimeout(longPressTimerRef.current)
+      longPressTimerRef.current = null
+    }
+  }
+
+  const LONG_PRESS_MS = 500
+
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!e.isPrimary) return
     pointerIdRef.current = e.pointerId
     draggingRef.current = false
+    longPressFiredRef.current = false
 
     dragStartRef.current = { x: e.clientX, y: e.clientY }
     positionStartRef.current = pos
     pointerDownAtRef.current = { x: e.clientX, y: e.clientY, t: Date.now() }
+
+    clearLongPressTimer()
+    longPressTimerRef.current = setTimeout(() => {
+      if (draggingRef.current) return
+      longPressFiredRef.current = true
+      setOpen(false)
+      setPos(dragClamp({ x: resolvedHomePosition.x, y: resolvedHomePosition.y }))
+    }, LONG_PRESS_MS)
 
     try {
       e.currentTarget.setPointerCapture(e.pointerId)
@@ -140,7 +181,10 @@ export function ActionButton(props: ActionButtonProps) {
     const dy = e.clientY - dragStartRef.current.y
     if (!draggingRef.current) {
       // Consider it a drag after a small threshold.
-      if (Math.hypot(dx, dy) > 6) draggingRef.current = true
+      if (Math.hypot(dx, dy) > 6) {
+        draggingRef.current = true
+        clearLongPressTimer()
+      }
     }
     const next = { x: positionStartRef.current.x + dx, y: positionStartRef.current.y + dy }
     setPos(dragClamp(next))
@@ -149,12 +193,24 @@ export function ActionButton(props: ActionButtonProps) {
   const onPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
     if (pointerIdRef.current !== e.pointerId) return
 
+    clearLongPressTimer()
+
     const { x: sx, y: sy, t } = pointerDownAtRef.current
     const dist = Math.hypot(e.clientX - sx, e.clientY - sy)
     const dt = Date.now() - t
     const wasDragging = draggingRef.current
     pointerIdRef.current = null
     draggingRef.current = false
+
+    if (longPressFiredRef.current) {
+      longPressFiredRef.current = false
+      try {
+        e.currentTarget.releasePointerCapture(e.pointerId)
+      } catch {
+        // ignore
+      }
+      return
+    }
 
     // Toggle only if it was effectively a click (not a drag).
     if (dist < 6 && dt < 400 && !wasDragging) {
@@ -168,7 +224,18 @@ export function ActionButton(props: ActionButtonProps) {
     }
   }
 
-  const items: ActionButtonMenuItemId[] = ['yourRole', 'viewRoles', 'playerNames', 'queryResults', 'events']
+  const onPointerCancel = (e: React.PointerEvent<HTMLDivElement>) => {
+    clearLongPressTimer()
+    if (pointerIdRef.current !== e.pointerId) return
+    pointerIdRef.current = null
+    draggingRef.current = false
+    longPressFiredRef.current = false
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId)
+    } catch {
+      // ignore
+    }
+  }
 
   const onItem = (id: ActionButtonMenuItemId) => {
     onItemClick?.(id)
@@ -192,97 +259,59 @@ export function ActionButton(props: ActionButtonProps) {
         ...style
       }}
     >
-      {/* Menu Panel */}
+      {/* Menu: standalone buttons only (no wrapping panel). */}
       {open ? (
-        <Paper
-          elevation={0}
+        <Box
+          dir="rtl"
+          onPointerDown={(e) => {
+            e.stopPropagation()
+          }}
           sx={{
             position: 'fixed',
             top: menuCoords.y,
             left: menuCoords.x,
             width: `${menuWidth}px`,
-            borderRadius: '26px',
-            padding: '10px',
-            backdropFilter: 'blur(12px)',
-            background: 'rgba(255,255,255,0.10)',
-            border: '1px solid rgba(255,255,255,0.22)',
-            boxShadow: '0 18px 50px rgba(0,0,0,0.35)',
-            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: `${menuGap}px`,
             transformOrigin: menuSide === 'right' ? 'left top' : 'right top'
           }}
-          onPointerDown={(e) => {
-            // Prevent outside-click closing while interacting with the menu.
-            e.stopPropagation()
-          }}
         >
-          <Box
-            dir="rtl"
-            sx={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '8px'
-            }}
-          >
-            {items.map((id) => {
-              const label = menuLabels[id]
-              const showBadge = id === 'events' && unreadEventsCount > 0
-
-              const content = showBadge ? (
-                <Badge
-                  badgeContent={unreadEventsCount}
-                  color="secondary"
-                  sx={{
-                    '& .MuiBadge-badge': {
-                      right: 2,
-                      top: 2,
-                      fontSize: '0.75rem'
-                    }
-                  }}
-                >
-                  <Typography
-                    sx={{
-                      fontSize: '0.95rem',
-                      fontWeight: 700,
-                      letterSpacing: '-0.01em'
-                    }}
-                  >
-                    {label}
-                  </Typography>
-                </Badge>
-              ) : (
+          {MENU_ITEMS.map((id) => {
+            const label = menuLabels[id]
+            return (
+              <ButtonBase
+                key={id}
+                onClick={() => onItem(id)}
+                sx={{
+                  height: `${menuItemHeight}px`,
+                  borderRadius: '18px',
+                  paddingX: '14px',
+                  justifyContent: 'flex-start',
+                  backdropFilter: 'blur(12px)',
+                  background: 'rgba(255,255,255,0.10)',
+                  border: '1px solid rgba(255,255,255,0.22)',
+                  boxShadow: '0 12px 36px rgba(0,0,0,0.35)',
+                  '&:hover': {
+                    background: 'rgba(255,255,255,0.14)'
+                  }
+                }}
+              >
                 <Typography
                   sx={{
                     fontSize: '0.95rem',
                     fontWeight: 700,
-                    letterSpacing: '-0.01em'
+                    letterSpacing: '-0.01em',
+                    width: '100%',
+                    textAlign: 'start'
                   }}
                 >
                   {label}
                 </Typography>
-              )
-
-              return (
-                <ButtonBase
-                  key={id}
-                  onClick={() => onItem(id)}
-                  sx={{
-                    height: `${menuItemHeight}px`,
-                    borderRadius: '18px',
-                    paddingX: '14px',
-                    justifyContent: 'flex-start',
-                    background: 'rgba(0,0,0,0.10)',
-                    border: '1px solid rgba(255,255,255,0.14)',
-                    '&:hover': {
-                      background: 'rgba(255,255,255,0.10)'
-                    }
-                  }}
-                >
-                  <Box sx={{ width: '100%', display: 'flex', alignItems: 'center' }}>{content}</Box>
-                </ButtonBase>
-              )
-            })}
-          </Box>
-        </Paper>
+              </ButtonBase>
+            )
+          })}
+        </Box>
       ) : null}
 
       {/* Draggable Circle */}
@@ -290,6 +319,7 @@ export function ActionButton(props: ActionButtonProps) {
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
+        onPointerCancel={onPointerCancel}
         sx={{
           position: 'fixed',
           width: `${circleSize}px`,
@@ -310,19 +340,31 @@ export function ActionButton(props: ActionButtonProps) {
         }}
       >
         <Box
+          aria-hidden
+          component="svg"
+          viewBox="0 0 24 24"
           sx={{
-            width: '44%',
-            height: '44%',
-            borderRadius: '14px',
-            background: 'rgba(255,255,255,0.08)',
-            border: '1px solid rgba(255,255,255,0.20)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            backdropFilter: 'blur(10px)'
+            width: `${circleSize * 0.5}px`,
+            height: `${circleSize * 0.5}px`,
+            flexShrink: 0,
+            display: 'block',
+            color: '#fff',
+            opacity: 0.96,
+            filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.45))',
+            // Crisp edges on HiDPI
+            shapeRendering: 'geometricPrecision'
           }}
         >
-          <Typography sx={{ fontSize: '1.2rem', fontWeight: 900, lineHeight: 1 }}>+</Typography>
+          <defs>
+            <linearGradient id={iconGradientId} x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#ffffff" stopOpacity="1" />
+              <stop offset="100%" stopColor="#e8eef8" stopOpacity="0.95" />
+            </linearGradient>
+          </defs>
+          <path
+            fill={`url(#${iconGradientId})`}
+            d="M11 21h-1l1-7H7.5c-.58 0-.57-.32-.38-.66.19-.34.05-.08.07-.12C8.48 10.94 10.42 7.54 13 3h1l-1 7h3.5c.49 0 .56.33.47.51l-.07.15C12.96 17.55 11 21 11 21z"
+          />
         </Box>
       </Box>
     </div>

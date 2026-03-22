@@ -1,6 +1,6 @@
 # god-button-action-button
 
-Movable circular action button for mobile games (draggable) with an RTL glass, curved menu built with MUI.
+Movable circular action button for mobile games (draggable) with an RTL menu of glass-style buttons built with MUI.
 
 ## Install (after publishing)
 
@@ -16,8 +16,6 @@ import { ActionButton } from 'god-button-action-button'
 export function GameUI() {
   return (
     <ActionButton
-      yourRoleName="پزشک"
-      unreadEventsCount={3}
       onItemClick={(id) => {
         console.log(id)
       }}
@@ -28,13 +26,13 @@ export function GameUI() {
 
 ## Menu items
 
-Default Persian labels:
+Three standalone buttons (no outer panel). Default Persian labels:
 
-- `نقش شما: {yourRoleName}`
-- `مشاهده ی نقش ها`
-- `نام بازیکنان`
-- `نتیجه ی استعلام ها`
-- `رخداد ها` (shows a badge when `unreadEventsCount > 0`)
+- `اطلاعات بازی` (`gameInfo`)
+- `پیام ها` (`messages`)
+- `توانایی ها` (`abilities`)
+
+Override copy with the `labels` prop if needed.
 
 The menu opens to the side opposite the circle position:
 

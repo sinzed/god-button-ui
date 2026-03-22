@@ -29,8 +29,6 @@ function Playground() {
         }}
       >
         <ActionButton
-          yourRoleName="پزشک"
-          unreadEventsCount={3}
           onItemClick={(id) => {
             // eslint-disable-next-line no-console
             console.log('Menu item:', id)

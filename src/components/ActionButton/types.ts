@@ -1,11 +1,6 @@
 import type React from 'react'
 
-export type ActionButtonMenuItemId =
-  | 'yourRole'
-  | 'viewRoles'
-  | 'playerNames'
-  | 'queryResults'
-  | 'events'
+export type ActionButtonMenuItemId = 'gameInfo' | 'messages' | 'abilities'
 
 export type ActionButtonMenuItem = {
   id: ActionButtonMenuItemId
@@ -14,21 +9,12 @@ export type ActionButtonMenuItem = {
 
 export type ActionButtonProps = {
   /**
-   * Count of new notifications/events for the "رخداد ها" item.
-   */
-  unreadEventsCount?: number
-  /**
-   * Your role name shown in "نقش شما: {yourRoleName}".
-   */
-  yourRoleName?: string
-
-  /**
-   * Called when a user clicks a menu item.
+   * Called when a user taps a menu button.
    */
   onItemClick?: (id: ActionButtonMenuItemId) => void
 
   /**
-   * Allows overriding the default Persian menu labels.
+   * Override default Persian labels (اطلاعات بازی، پیام ها، توانایی ها).
    */
   labels?: Partial<Record<ActionButtonMenuItemId, string>>
 
@@ -36,6 +22,12 @@ export type ActionButtonProps = {
    * Initial center position (px from top-left of the viewport).
    */
   initialPosition?: { x: number; y: number }
+
+  /**
+   * “Home” center position used when long-pressing the circle to snap back.
+   * Defaults to the same value as `initialPosition`, or the built-in default (left side, ~30% from top).
+   */
+  homePosition?: { x: number; y: number }
 
   /**
    * Padding used when dragging to keep the circle inside the viewport.
@@ -48,14 +40,19 @@ export type ActionButtonProps = {
   circleSize?: number
 
   /**
-   * Menu width in px.
+   * Menu button width in px.
    */
   menuWidth?: number
 
   /**
-   * Menu item height in px.
+   * Menu button height in px.
    */
   menuItemHeight?: number
+
+  /**
+   * Vertical gap between menu buttons in px.
+   */
+  menuGap?: number
 
   /**
    * Optional CSS class applied to the root wrapper.
@@ -67,4 +64,3 @@ export type ActionButtonProps = {
    */
   style?: React.CSSProperties
 }
-
