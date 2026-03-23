@@ -29,11 +29,20 @@ export function MenuItemIcon(props: { id: ActionButtonMenuItemId }) {
       )
     case 'gameInfo':
       return (
-        <Box component="svg" viewBox="0 0 24 24" aria-hidden sx={iconSx}>
+        <Box
+          component="svg"
+          viewBox="0 0 24 24"
+          aria-hidden
+          sx={{ ...iconSx, color: '#fff', filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.45))' }}
+        >
           <path
-            fill="currentColor"
-            d="M13.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM9.5 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm5 8.5c0 2.49-2.01 4.5-4.5 4.5S5.5 18.99 5.5 16.5 7.51 12 10 12s4.5 2.01 4.5 4.5zm4.5-4.5c0 1.38-1.12 2.5-2.5 2.5S14 16.38 14 15s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5z"
+            d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
           />
+          <circle cx="12" cy="8" r="1.3" fill="currentColor" />
+          <path fill="currentColor" d="M11.1 10.5h1.8v6h-1.8z" />
         </Box>
       )
     case 'yourRole':

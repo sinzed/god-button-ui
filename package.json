@@ -33,7 +33,10 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "API.md",
+    "DEVELOPMENT.md"
   ],
   "scripts": {
     "dev": "vite",
