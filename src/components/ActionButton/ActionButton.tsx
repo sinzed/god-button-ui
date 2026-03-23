@@ -471,6 +471,7 @@ export function ActionButton(props: ActionButtonProps) {
                 >
                   <Typography
                     sx={{
+                      fontFamily: 'inherit',
                       fontSize: '0.95rem',
                       fontWeight: 700,
                       letterSpacing: '-0.01em',
@@ -541,6 +542,7 @@ export function ActionButton(props: ActionButtonProps) {
           >
             <Typography
               sx={{
+                fontFamily: 'inherit',
                 fontSize: '1.02rem',
                 fontWeight: 800,
                 letterSpacing: '-0.02em',
@@ -562,19 +564,35 @@ export function ActionButton(props: ActionButtonProps) {
               }}
             >
               <Box>
-                <Typography sx={{ fontSize: '0.82rem', fontWeight: 700, opacity: 0.72, marginBottom: '6px' }}>
+                <Typography
+                  sx={{
+                    fontFamily: 'inherit',
+                    fontSize: '0.82rem',
+                    fontWeight: 700,
+                    opacity: 0.72,
+                    marginBottom: '6px'
+                  }}
+                >
                   {gameInfoSections.playerNames}
                 </Typography>
-                <Typography sx={{ fontSize: '0.95rem', fontWeight: 600, lineHeight: 1.45 }}>
+                <Typography sx={{ fontFamily: 'inherit', fontSize: '0.95rem', fontWeight: 600, lineHeight: 1.45 }}>
                   {playerNamesContent ?? '—'}
                 </Typography>
               </Box>
               <Divider sx={{ borderColor: 'rgba(255,255,255,0.12)' }} />
               <Box>
-                <Typography sx={{ fontSize: '0.82rem', fontWeight: 700, opacity: 0.72, marginBottom: '6px' }}>
+                <Typography
+                  sx={{
+                    fontFamily: 'inherit',
+                    fontSize: '0.82rem',
+                    fontWeight: 700,
+                    opacity: 0.72,
+                    marginBottom: '6px'
+                  }}
+                >
                   {gameInfoSections.roleNames}
                 </Typography>
-                <Typography sx={{ fontSize: '0.95rem', fontWeight: 600, lineHeight: 1.45 }}>
+                <Typography sx={{ fontFamily: 'inherit', fontSize: '0.95rem', fontWeight: 600, lineHeight: 1.45 }}>
                   {gameRoleNamesContent ?? '—'}
                 </Typography>
               </Box>
@@ -610,6 +628,7 @@ export function ActionButton(props: ActionButtonProps) {
         >
           <Typography
             sx={{
+              fontFamily: 'inherit',
               fontSize: '1.02rem',
               fontWeight: 800,
               letterSpacing: '-0.02em',
@@ -631,7 +650,7 @@ export function ActionButton(props: ActionButtonProps) {
             }}
           >
             {messages.length === 0 ? (
-              <Typography sx={{ fontSize: '0.9rem', opacity: 0.75, py: 2, textAlign: 'center' }}>
+              <Typography sx={{ fontFamily: 'inherit', fontSize: '0.9rem', opacity: 0.75, py: 2, textAlign: 'center' }}>
                 پیامی نیست
               </Typography>
             ) : (
@@ -647,12 +666,26 @@ export function ActionButton(props: ActionButtonProps) {
                   {m.at != null ? (
                     <Typography
                       component="div"
-                      sx={{ fontSize: '0.7rem', fontWeight: 600, opacity: 0.65, marginBottom: '4px' }}
+                      sx={{
+                        fontFamily: 'inherit',
+                        fontSize: '0.7rem',
+                        fontWeight: 600,
+                        opacity: 0.65,
+                        marginBottom: '4px'
+                      }}
                     >
                       {new Date(m.at).toLocaleString()}
                     </Typography>
                   ) : null}
-                  <Typography sx={{ fontSize: '0.93rem', fontWeight: 600, lineHeight: 1.45, wordBreak: 'break-word' }}>
+                  <Typography
+                    sx={{
+                      fontFamily: 'inherit',
+                      fontSize: '0.93rem',
+                      fontWeight: 600,
+                      lineHeight: 1.45,
+                      wordBreak: 'break-word'
+                    }}
+                  >
                     {m.body}
                   </Typography>
                 </Box>
@@ -694,6 +727,7 @@ export function ActionButton(props: ActionButtonProps) {
           >
             <Typography
               sx={{
+                fontFamily: 'inherit',
                 fontSize: '0.88rem',
                 fontWeight: 650,
                 lineHeight: 1.45,

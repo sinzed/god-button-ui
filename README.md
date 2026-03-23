@@ -35,6 +35,29 @@ export function GameUI() {
 }
 ```
 
+For visual consistency (font + baseline) between your app and the component, wrap your app with your MUI theme and `CssBaseline`:
+
+```tsx
+import { ThemeProvider, createTheme } from '@mui/material/styles'
+import CssBaseline from '@mui/material/CssBaseline'
+
+const theme = createTheme({
+  direction: 'rtl',
+  typography: {
+    fontFamily: 'IRANSansX, system-ui, sans-serif' // or your app font
+  }
+})
+
+export function Root() {
+  return (
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <GameUI />
+    </ThemeProvider>
+  )
+}
+```
+
 ## What this component does
 
 `ActionButton` renders a fixed-position draggable circle. It behaves like:
