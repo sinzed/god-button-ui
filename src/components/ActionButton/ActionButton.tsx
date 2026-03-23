@@ -393,8 +393,12 @@ export function ActionButton(props: ActionButtonProps) {
   const previewBubbleLayout = useMemo(() => {
     if (!previewMessage || typeof window === 'undefined') return null
     const w = Math.min(menuWidth + 24, 280)
+    /** Keep preview to the north-east of FAB by default. */
+    const gapFromFabX = 8
+    const fabRight = pos.x + circleSize / 2
+    const preferredLeft = fabRight + gapFromFabX
     const left = Math.min(
-      Math.max(dragBoundsPadding, pos.x - w / 2),
+      Math.max(dragBoundsPadding, preferredLeft),
       window.innerWidth - dragBoundsPadding - w
     )
     /** Small gap between triangle tip and top edge of the FAB (px). */
@@ -745,7 +749,7 @@ export function ActionButton(props: ActionButtonProps) {
             sx={{
               width: 0,
               height: 0,
-              mx: 'auto',
+              ml: '22px',
               flexShrink: 0,
               borderLeft: '9px solid transparent',
               borderRight: '9px solid transparent',
