@@ -4,6 +4,24 @@
   "description": "Movable action button with RTL glass menu for mobile games.",
   "license": "MIT",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sinzed/god-button-ui.git"
+  },
+  "bugs": {
+    "url": "https://github.com/sinzed/god-button-ui/issues"
+  },
+  "homepage": "https://github.com/sinzed/god-button-ui#readme",
+  "keywords": [
+    "react",
+    "mui",
+    "rtl",
+    "glass",
+    "mobile",
+    "draggable",
+    "menu",
+    "action-button"
+  ],
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -21,7 +39,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "prepublishOnly": "npm run build"
   },
   "peerDependencies": {
     "@emotion/react": ">=11",

@@ -1,14 +1,24 @@
 # god-button-action-button
 
-Movable circular action button for mobile games (draggable) with an RTL menu of glass-style buttons built with MUI.
+Movable circular action button for mobile games (draggable) with an RTL “glass” menu built with MUI.
 
-## Install (after publishing)
+## Install
 
 ```bash
-npm i god-button-action-button
+npm install god-button-action-button
 ```
 
-## Usage
+## Requirements (peer dependencies)
+
+This package expects the host app to provide:
+
+- `react` (>= 18)
+- `react-dom` (>= 18)
+- `@mui/material` (>= 5)
+- `@emotion/react` (>= 11)
+- `@emotion/styled` (>= 11)
+
+## Quick start
 
 ```tsx
 import { ActionButton } from 'god-button-action-button'
@@ -18,36 +28,97 @@ export function GameUI() {
     <ActionButton
       yourRoleName="پزشک"
       onItemClick={(id) => {
-        console.log(id)
+        console.log(id) // "messages" | "gameInfo" | "yourRole"
       }}
     />
   )
 }
 ```
 
+## What this component does
+
+`ActionButton` renders a fixed-position draggable circle. It behaves like:
+
+- Default state: bolt (action) icon
+- Menu open: close icon
+- “اطلاعات بازی” (game info) or “پیام ها” (messages) panel open: back icon
+- Tapping back returns to the main 3-item menu
+
+The menu opens toward the opposite side of the circle:
+
+- circle is left of the screen center => menu expands to the right
+- circle is right of the screen center => menu expands to the left
+
 ## Menu items
 
-Three standalone buttons (no outer panel), top to bottom:
+Three standalone menu buttons (top to bottom):
 
-- `پیام ها` (`messages`) — chat icon
-- `اطلاعات بازی` (`gameInfo`) — game-controller icon
-- `نقش شما {yourRoleName}` (`yourRole`) — person icon; default role is `پزشک` via `yourRoleName`
+- `messages` — label: `پیام ها`
+- `gameInfo` — label: `اطلاعات بازی`
+- `yourRole` — label: `نقش شما {yourRoleName}` (default `yourRoleName` is `پزشک`)
 
-Override copy with the `labels` prop if needed.
+Override any labels with the `labels` prop.
 
-With the **menu** open, the circle shows a **close** icon. With the **اطلاعات بازی** panel open, it shows a **back** icon; tapping returns to the main menu (the three buttons). Otherwise it shows the action (bolt) icon. Tapping «اطلاعات بازی» opens a **tall glass panel** in the **same position and width** as the menu stack (`menuWidth`), with **نام بازیکنان** and **نام نقش های بازی** inside (scrollable). Override headings with `gameInfoSectionLabels`, body with `playerNamesContent` / `gameRoleNamesContent`, and height cap with `gameInfoPanelMaxHeight` (default 340px).
+## Messages
 
-The menu opens to the side opposite the circle position:
+If you pass `messages`, the component shows:
 
-- Circle on the left => menu expands to the right
-- Circle on the right => menu expands to the left
+- An unread badge on the circle (based on message count since last “open”)
+- A preview bubble for the latest message (for `messagePreviewDurationMs`, default `10000` ms)
+- A scrollable “پیام ها” panel that lists messages newest-first
 
-## Development / playground
+Message type:
 
-Run the local playground:
-
-```bash
-npm run dev
+```ts
+{ id: string; body: string; at?: number } // `at` is a ms timestamp for display
 ```
 
-# god-button-ui
+## Game info panel
+
+When “اطلاعات بازی” is opened, it renders a tall glass panel in the same anchored position and width as the menu stack (`menuWidth`).
+
+You can customize:
+
+- section headings with `gameInfoSectionLabels` (defaults: `نام بازیکنان`, `نام نقش های بازی`)
+- section bodies with `playerNamesContent` and `gameRoleNamesContent`
+- max panel height with `gameInfoPanelMaxHeight` (default `340`)
+
+## Props (high level)
+
+The full prop surface is typed in `ActionButtonProps` (`src/components/ActionButton/types.ts`), but these are the key ones:
+
+- `yourRoleName?: string` (default `پزشک`)
+- `onItemClick?: (id: 'messages' | 'gameInfo' | 'yourRole') => void`
+- `messages?: ActionButtonMessage[]`
+- `playerNamesContent?: React.ReactNode`
+- `gameRoleNamesContent?: React.ReactNode`
+- `labels?: Partial<Record<'messages' | 'gameInfo' | 'yourRole', string>>`
+- `initialPosition?: { x: number; y: number }` (px from top-left)
+- `homePosition?: { x: number; y: number }` (used after long-press snap-back)
+- `menuWidth?: number` (px)
+- `menuItemHeight?: number` (px)
+- `menuGap?: number` (px)
+- `gameInfoPanelMaxHeight?: number` (px)
+- `messagePreviewDurationMs?: number`
+- `accentGradient?: string` (CSS `background` for the circle)
+- `menuSurfaceBackground?: string` (CSS `background` for the panels)
+
+## RTL / accessibility notes
+
+The component uses:
+
+- `dir="rtl"` on its panels (and checks document direction to mirror the “back” arrow)
+- `role="button"` and an `aria-label` on the draggable circle
+
+If your app is not RTL, labels can still be customized, but the default UI text is Persian.
+
+## Development
+
+See:
+
+- `DEVELOPMENT.md`
+- `API.md`
+
+## License
+
+MIT
