@@ -421,6 +421,8 @@ export function ActionButton(props: ActionButtonProps) {
         left: 0,
         width: 0,
         height: 0,
+        color: '#fff',
+        fontFamily: 'system-ui, sans-serif',
         ...style
       }}
     >
@@ -440,6 +442,7 @@ export function ActionButton(props: ActionButtonProps) {
             display: 'flex',
             flexDirection: 'column',
             gap: `${menuGap}px`,
+            color: '#fff',
             transformOrigin: menuSide === 'right' ? 'left top' : 'right top'
           }}
         >
@@ -456,6 +459,7 @@ export function ActionButton(props: ActionButtonProps) {
                   justifyContent: 'flex-start',
                   backdropFilter: 'blur(12px)',
                   background: menuSurfaceBackground,
+                  color: '#fff',
                   border: '1px solid rgba(255,255,255,0.22)',
                   boxShadow: '0 12px 36px rgba(0,0,0,0.35)',
                   '&:hover': {
@@ -539,6 +543,7 @@ export function ActionButton(props: ActionButtonProps) {
               padding: '14px 14px 16px',
               backdropFilter: 'blur(12px)',
               background: menuSurfaceBackground,
+              color: '#fff',
               border: '1px solid rgba(255,255,255,0.22)',
               boxShadow: '0 12px 36px rgba(0,0,0,0.35)',
               transformOrigin: menuSide === 'right' ? 'left top' : 'right top'
@@ -625,6 +630,7 @@ export function ActionButton(props: ActionButtonProps) {
             padding: '14px 14px 16px',
             backdropFilter: 'blur(12px)',
             background: menuSurfaceBackground,
+            color: '#fff',
             border: '1px solid rgba(255,255,255,0.22)',
             boxShadow: '0 12px 36px rgba(0,0,0,0.35)',
             transformOrigin: menuSide === 'right' ? 'left top' : 'right top'
@@ -722,6 +728,7 @@ export function ActionButton(props: ActionButtonProps) {
               borderRadius: '14px',
               backdropFilter: 'blur(12px)',
               background: menuSurfaceBackground,
+              color: '#fff',
               border: '1px solid rgba(255,255,255,0.28)',
               boxShadow: '0 14px 40px rgba(0,0,0,0.4)',
               position: 'relative',
