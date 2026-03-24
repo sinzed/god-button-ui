@@ -35,9 +35,26 @@ export type ActionButtonProps = {
   playerNamesContent?: React.ReactNode
 
   /**
+   * Player names rendered by default as a numbered multiline list.
+   * Used when `playerNamesContent` is not provided.
+   */
+  playerNames?: string[]
+
+  /**
    * Body under «نام نقش های بازی» in the game-info panel.
    */
   gameRoleNamesContent?: React.ReactNode
+
+  /**
+   * Role names rendered by default as a numbered multiline list.
+   * Used when `gameRoleNamesContent` is not provided.
+   */
+  gameRoleNames?: string[]
+
+  /**
+   * Body shown in the «توضیح نقش» panel when tapping «نقش شما».
+   */
+  yourRoleDescription?: React.ReactNode
 
   /**
    * Called when a user taps a menu button.

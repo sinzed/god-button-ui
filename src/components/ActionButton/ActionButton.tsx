@@ -4,8 +4,8 @@ import { Box, ButtonBase, Divider, Paper, Typography, useTheme } from '@mui/mate
 import { MenuItemIcon } from './menuItemIcons'
 import type { ActionButtonMenuItemId, ActionButtonMessage, ActionButtonProps } from './types'
 
-/** Top → bottom: پیام ها، اطلاعات بازی، نقش شما … */
-const MENU_ITEMS: ActionButtonMenuItemId[] = ['messages', 'gameInfo', 'yourRole']
+/** Top → bottom: پیام ها، نقش شما، اطلاعات بازی … */
+const MENU_ITEMS: ActionButtonMenuItemId[] = ['messages', 'yourRole', 'gameInfo']
 
 const DEFAULT_YOUR_ROLE = 'پزشک'
 
@@ -21,8 +21,11 @@ export function ActionButton(props: ActionButtonProps) {
   const {
     yourRoleName = DEFAULT_YOUR_ROLE,
     gameInfoSectionLabels,
+    playerNames,
     playerNamesContent,
+    gameRoleNames,
     gameRoleNamesContent,
+    yourRoleDescription,
     onItemClick,
     labels,
     initialPosition,
@@ -73,6 +76,7 @@ export function ActionButton(props: ActionButtonProps) {
   const [open, setOpen] = useState(false)
   const [gameInfoPanelOpen, setGameInfoPanelOpen] = useState(false)
   const [messagesPanelOpen, setMessagesPanelOpen] = useState(false)
+  const [yourRolePanelOpen, setYourRolePanelOpen] = useState(false)
   const [lastReadCount, setLastReadCount] = useState(0)
   const [previewMessage, setPreviewMessage] = useState<ActionButtonMessage | null>(null)
   const messagesLenRef = useRef(0)
@@ -107,6 +111,34 @@ export function ActionButton(props: ActionButtonProps) {
     }),
     [gameInfoSectionLabels]
   )
+
+  const defaultPlayerNamesContent = useMemo(() => {
+    if (!playerNames?.length) return null
+    return (
+      <>
+        {playerNames.map((name, index) => (
+          <React.Fragment key={`${name}-${index}`}>
+            {index + 1}. {name}
+            <br />
+          </React.Fragment>
+        ))}
+      </>
+    )
+  }, [playerNames])
+
+  const defaultGameRoleNamesContent = useMemo(() => {
+    if (!gameRoleNames?.length) return null
+    return (
+      <>
+        {gameRoleNames.map((role, index) => (
+          <React.Fragment key={`${role}-${index}`}>
+            {index + 1}. {role}
+            <br />
+          </React.Fragment>
+        ))}
+      </>
+    )
+  }, [gameRoleNames])
 
   const unreadCount = Math.max(0, messages.length - lastReadCount)
 
@@ -151,9 +183,9 @@ export function ActionButton(props: ActionButtonProps) {
     }
   }, [messages, messagesPanelOpen])
 
-  /** action = bolt; close = menu open; back = game-info or messages panel (returns to menu). */
+  /** action = bolt; close = menu open; back = side panels (returns to menu). */
   const fabIconMode =
-    gameInfoPanelOpen || messagesPanelOpen ? 'back' : open ? 'close' : 'action'
+    gameInfoPanelOpen || messagesPanelOpen || yourRolePanelOpen ? 'back' : open ? 'close' : 'action'
 
   const theme = useTheme()
   const rtlBackArrow =
@@ -191,7 +223,9 @@ export function ActionButton(props: ActionButtonProps) {
     const menuStackHeight = menuItemHeight * MENU_ITEMS.length + menuGap * (MENU_ITEMS.length - 1)
     // Same anchor as the menu: use taller vertical extent when a side panel is open.
     const stackHeight =
-      gameInfoPanelOpen || messagesPanelOpen ? resolvedGamePanelHeight : menuStackHeight
+      gameInfoPanelOpen || messagesPanelOpen || yourRolePanelOpen
+        ? resolvedGamePanelHeight
+        : menuStackHeight
     const yTop = Math.min(
       Math.max(yTopRaw, dragBoundsPadding),
       viewportHeight - dragBoundsPadding - stackHeight
@@ -207,11 +241,20 @@ export function ActionButton(props: ActionButtonProps) {
   useEffect(() => {
     recomputeMenuCoords()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pos.x, pos.y, menuSide, gameInfoPanelOpen, messagesPanelOpen, viewportHeight, resolvedGamePanelHeight])
+  }, [
+    pos.x,
+    pos.y,
+    menuSide,
+    gameInfoPanelOpen,
+    messagesPanelOpen,
+    yourRolePanelOpen,
+    viewportHeight,
+    resolvedGamePanelHeight
+  ])
 
   // Close menu / side panels when clicking outside the root.
   useEffect(() => {
-    if (!open && !gameInfoPanelOpen && !messagesPanelOpen) return
+    if (!open && !gameInfoPanelOpen && !messagesPanelOpen && !yourRolePanelOpen) return
 
     const onDown = (e: MouseEvent | TouchEvent) => {
       const el = rootRef.current
@@ -221,6 +264,7 @@ export function ActionButton(props: ActionButtonProps) {
       setOpen(false)
       setGameInfoPanelOpen(false)
       setMessagesPanelOpen(false)
+      setYourRolePanelOpen(false)
     }
 
     window.addEventListener('mousedown', onDown)
@@ -229,7 +273,7 @@ export function ActionButton(props: ActionButtonProps) {
       window.removeEventListener('mousedown', onDown)
       window.removeEventListener('touchstart', onDown)
     }
-  }, [open, gameInfoPanelOpen, messagesPanelOpen])
+  }, [open, gameInfoPanelOpen, messagesPanelOpen, yourRolePanelOpen])
 
   useEffect(() => {
     return () => {
@@ -278,6 +322,7 @@ export function ActionButton(props: ActionButtonProps) {
       setOpen(false)
       setGameInfoPanelOpen(false)
       setMessagesPanelOpen(false)
+      setYourRolePanelOpen(false)
       setPos(dragClamp({ x: resolvedHomePosition.x, y: resolvedHomePosition.y }))
     }, LONG_PRESS_MS)
 
@@ -333,6 +378,9 @@ export function ActionButton(props: ActionButtonProps) {
       } else if (messagesPanelOpen) {
         setMessagesPanelOpen(false)
         setOpen(true)
+      } else if (yourRolePanelOpen) {
+        setYourRolePanelOpen(false)
+        setOpen(true)
       } else {
         setOpen((v) => !v)
       }
@@ -362,6 +410,7 @@ export function ActionButton(props: ActionButtonProps) {
     if (id === 'gameInfo') {
       onItemClick?.(id)
       setMessagesPanelOpen(false)
+      setYourRolePanelOpen(false)
       setGameInfoPanelOpen(true)
       setOpen(false)
       return
@@ -369,6 +418,7 @@ export function ActionButton(props: ActionButtonProps) {
     if (id === 'messages') {
       onItemClick?.(id)
       setGameInfoPanelOpen(false)
+      setYourRolePanelOpen(false)
       setMessagesPanelOpen(true)
       setOpen(false)
       setLastReadCount(messages.length)
@@ -377,6 +427,14 @@ export function ActionButton(props: ActionButtonProps) {
         clearTimeout(previewTimerRef.current)
         previewTimerRef.current = null
       }
+      return
+    }
+    if (id === 'yourRole') {
+      onItemClick?.(id)
+      setGameInfoPanelOpen(false)
+      setMessagesPanelOpen(false)
+      setYourRolePanelOpen(true)
+      setOpen(false)
       return
     }
     onItemClick?.(id)
@@ -585,7 +643,7 @@ export function ActionButton(props: ActionButtonProps) {
                   {gameInfoSections.playerNames}
                 </Typography>
                 <Typography sx={{ fontFamily: 'inherit', fontSize: '0.95rem', fontWeight: 600, lineHeight: 1.45 }}>
-                  {playerNamesContent ?? '—'}
+                  {playerNamesContent ?? defaultPlayerNamesContent ?? '—'}
                 </Typography>
               </Box>
               <Divider sx={{ borderColor: 'rgba(255,255,255,0.12)' }} />
@@ -602,7 +660,7 @@ export function ActionButton(props: ActionButtonProps) {
                   {gameInfoSections.roleNames}
                 </Typography>
                 <Typography sx={{ fontFamily: 'inherit', fontSize: '0.95rem', fontWeight: 600, lineHeight: 1.45 }}>
-                  {gameRoleNamesContent ?? '—'}
+                  {gameRoleNamesContent ?? defaultGameRoleNamesContent ?? '—'}
                 </Typography>
               </Box>
             </Box>
@@ -705,7 +763,75 @@ export function ActionButton(props: ActionButtonProps) {
         </Paper>
       ) : null}
 
-      {previewMessage && !messagesPanelOpen && previewBubbleLayout ? (
+      {yourRolePanelOpen ? (
+        <Paper
+          dir="rtl"
+          elevation={0}
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
+          sx={{
+            position: 'fixed',
+            zIndex: 1321,
+            top: menuCoords.y,
+            left: menuCoords.x,
+            width: `${menuWidth}px`,
+            height: `${resolvedGamePanelHeight}px`,
+            maxHeight: `${resolvedGamePanelHeight}px`,
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            borderRadius: '22px',
+            padding: '14px 14px 16px',
+            backdropFilter: 'blur(12px)',
+            background: menuSurfaceBackground,
+            color: '#fff',
+            border: '1px solid rgba(255,255,255,0.22)',
+            boxShadow: '0 12px 36px rgba(0,0,0,0.35)',
+            transformOrigin: menuSide === 'right' ? 'left top' : 'right top'
+          }}
+        >
+          <Typography
+            sx={{
+              fontFamily: 'inherit',
+              fontSize: '1.02rem',
+              fontWeight: 800,
+              letterSpacing: '-0.02em',
+              marginBottom: '6px',
+              flexShrink: 0
+            }}
+          >
+            {menuLabels.yourRole}
+          </Typography>
+          <Typography
+            sx={{
+              fontFamily: 'inherit',
+              fontSize: '0.82rem',
+              fontWeight: 700,
+              opacity: 0.72,
+              marginBottom: '10px',
+              flexShrink: 0
+            }}
+          >
+            توضیح نقش
+          </Typography>
+          <Box
+            sx={{
+              minHeight: 0,
+              flex: 1,
+              overflow: 'auto',
+              pr: '2px'
+            }}
+          >
+            <Typography
+              sx={{ fontFamily: 'inherit', fontSize: '0.95rem', fontWeight: 600, lineHeight: 1.55 }}
+            >
+              {yourRoleDescription ?? '—'}
+            </Typography>
+          </Box>
+        </Paper>
+      ) : null}
+
+      {previewMessage && !messagesPanelOpen && !yourRolePanelOpen && !gameInfoPanelOpen && previewBubbleLayout ? (
         <Box
           dir="rtl"
           sx={{
