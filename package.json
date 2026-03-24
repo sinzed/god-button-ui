@@ -1,6 +1,6 @@
 {
   "name": "god-button-action-button",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Movable action button with RTL glass menu for mobile games.",
   "license": "MIT",
   "type": "module",
