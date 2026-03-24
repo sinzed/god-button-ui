@@ -79,8 +79,11 @@ export function ActionButton(props: ActionButtonProps) {
   const [yourRolePanelOpen, setYourRolePanelOpen] = useState(false)
   const [lastReadCount, setLastReadCount] = useState(0)
   const [previewMessage, setPreviewMessage] = useState<ActionButtonMessage | null>(null)
+  const [vibing, setVibing] = useState(true)
+  const [clickWaves, setClickWaves] = useState<number[]>([])
   const messagesLenRef = useRef(0)
   const previewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const clickWaveTimersRef = useRef<ReturnType<typeof setTimeout>[]>([])
   const [pos, setPos] = useState(() => {
     if (initialPosition) return { x: initialPosition.x, y: initialPosition.y }
     if (homePositionProp) return { x: homePositionProp.x, y: homePositionProp.y }
@@ -159,6 +162,7 @@ export function ActionButton(props: ActionButtonProps) {
     if (messages.length > messagesLenRef.current) {
       const latest = messages[messages.length - 1]
       setPreviewMessage(latest)
+      setVibing(true)
       if (previewTimerRef.current != null) {
         clearTimeout(previewTimerRef.current)
         previewTimerRef.current = null
@@ -281,6 +285,8 @@ export function ActionButton(props: ActionButtonProps) {
         clearTimeout(longPressTimerRef.current)
         longPressTimerRef.current = null
       }
+      clickWaveTimersRef.current.forEach((timer) => clearTimeout(timer))
+      clickWaveTimersRef.current = []
     }
   }, [])
 
@@ -372,6 +378,13 @@ export function ActionButton(props: ActionButtonProps) {
 
     // Toggle only if it was effectively a click (not a drag).
     if (dist < 6 && dt < 400 && !wasDragging) {
+      setVibing(false)
+      const waveId = Date.now()
+      setClickWaves((waves) => [...waves, waveId])
+      const timer = setTimeout(() => {
+        setClickWaves((waves) => waves.filter((id) => id !== waveId))
+      }, 900)
+      clickWaveTimersRef.current.push(timer)
       if (gameInfoPanelOpen) {
         setGameInfoPanelOpen(false)
         setOpen(true)
@@ -905,6 +918,21 @@ export function ActionButton(props: ActionButtonProps) {
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerCancel}
         sx={{
+          '@keyframes fabVibeX': {
+            '0%, 100%': { transform: 'translateX(0px)' },
+            '20%': { transform: 'translateX(-1.2px)' },
+            '40%': { transform: 'translateX(1.2px)' },
+            '60%': { transform: 'translateX(-0.8px)' },
+            '80%': { transform: 'translateX(0.8px)' }
+          },
+          '@keyframes vibeWave': {
+            '0%': { transform: 'scale(0.94)', opacity: 0.5 },
+            '100%': { transform: 'scale(1.75)', opacity: 0 }
+          },
+          '@keyframes clickWave': {
+            '0%': { transform: 'scale(1)', opacity: 0.7 },
+            '100%': { transform: 'scale(1.95)', opacity: 0 }
+          },
           position: 'fixed',
           width: `${circleSize}px`,
           height: `${circleSize}px`,
@@ -920,9 +948,50 @@ export function ActionButton(props: ActionButtonProps) {
           touchAction: 'none',
           background: circleBg,
           border: circleBorder,
-          boxShadow: '0 18px 60px rgba(0,0,0,0.45)'
+          boxShadow: '0 18px 60px rgba(0,0,0,0.45)',
+          animation: vibing ? 'fabVibeX 620ms ease-in-out infinite' : 'none'
         }}
       >
+        {vibing ? (
+          <>
+            <Box
+              aria-hidden
+              sx={{
+                position: 'absolute',
+                inset: '-4px',
+                borderRadius: '50%',
+                border: '2px solid rgba(255,255,255,0.32)',
+                pointerEvents: 'none',
+                animation: 'vibeWave 1.7s ease-out infinite'
+              }}
+            />
+            <Box
+              aria-hidden
+              sx={{
+                position: 'absolute',
+                inset: '-4px',
+                borderRadius: '50%',
+                border: '2px solid rgba(255,255,255,0.2)',
+                pointerEvents: 'none',
+                animation: 'vibeWave 1.7s ease-out 0.85s infinite'
+              }}
+            />
+          </>
+        ) : null}
+        {clickWaves.map((waveId) => (
+          <Box
+            key={waveId}
+            aria-hidden
+            sx={{
+              position: 'absolute',
+              inset: '-4px',
+              borderRadius: '50%',
+              border: '2px solid rgba(255,255,255,0.48)',
+              pointerEvents: 'none',
+              animation: 'clickWave 0.9s ease-out forwards'
+            }}
+          />
+        ))}
         {unreadCount > 0 ? (
           <Box
             component="span"
